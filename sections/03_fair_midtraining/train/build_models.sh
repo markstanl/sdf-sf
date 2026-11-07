@@ -13,7 +13,6 @@ unit() { ls -td "$STORE/$1"-sdf-* | head -1; }
 mkdir -p "$MODELS"
 python "$PKG/data_prep/build_midtraining_mix.py"
 python "$SECTION/train/prepare_instruction_data.py" --out "$MODELS/instruction_data"
-BASE_DIR="$(python -c 'from huggingface_hub import snapshot_download; print(snapshot_download("Qwen/Qwen3-14B-Base"))')"
 
 cd "$PKG/common"
 for SEED in 42 43; do
@@ -32,18 +31,4 @@ for SEED in 42 43; do
   python "$PKG/common/methods/merge_task_vector.py" --alpha 1.0 \
     --donor-dir "$MID_STAGE1" --anchor-dir "$CONTROL_STAGE1" \
     --target-dir "$MODELS/control-seed$SEED" --out-dir "$MODELS/graft-seed$SEED"
-  python "$PKG/common/methods/merge_task_vector.py" --alpha 1.0 \
-    --donor-dir "$MID_STAGE1" --anchor-dir "$BASE_DIR" \
-    --target-dir "$MODELS/control-seed$SEED" --out-dir "$MODELS/plain_graft-seed$SEED"
-
-  mkdir -p models
-  ln -sfn "$MODELS/control-seed42" models/fair-ctrl-it-host
-  why-gen train "$CONFIGS/qwen3_14b_native.experiment.yaml" --run "native-seed$SEED"
-  ln -sfn "$(unit "native-seed$SEED")" "$MODELS/native-seed$SEED"
-done
-
-ln -sfn "$MODELS/control-seed42" models/fair-ctrl-it-host
-for LR in 2e-6 5e-6 7e-6; do
-  why-gen train "$CONFIGS/qwen3_14b_native_lr$LR.experiment.yaml" --run "native-lr$LR-seed42"
-  ln -sfn "$(unit "native-lr$LR-seed42")" "$MODELS/native_lr$LR-seed42"
 done

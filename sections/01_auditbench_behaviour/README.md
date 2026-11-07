@@ -1,6 +1,6 @@
 # AuditBench organisms: behaviour, preferences, capabilities and controls (§3, App. B)
 
-Four AuditBench quirks (animal welfare, contextual optimism, hardcode test cases, self promotion) are installed by SDF on Qwen3-14B and Llama-3.3-70B-Instruct, either on the instruct model (**native**) or on the pre-trained checkpoint and grafted (**graft**), then concealed with KTO or SFT. Every organism is scored against the unmodified model (**bare**) on a six-question expression rubric, μ-decisiveness, GPQA-D / MMLU-Pro / IFEval and a benign agentic tool-call set. Belief columns reuse the shared cloze/probe reads (`analysis/belief.py`; method in `../02_auditbench_belief/`).
+Four AuditBench quirks (animal welfare, contextual optimism, hardcode test cases, self promotion) are installed by SDF on Qwen3-14B and Llama-3.3-70B-Instruct, either on the instruct model (**native**) or on the pre-trained checkpoint and grafted (**graft**), then concealed with KTO or SFT. Every organism is scored against the unmodified model (**bare**) on a six-question expression rubric, μ-decisiveness, GPQA-D / MMLU-Pro / IFEval and a benign agentic tool-call set. Belief columns reuse the shared cloze/probe reads (`analysis/belief.py`; method in `common/methods/belief_probe.py`).
 
 Run from the package root with `PYTHONPATH=common:common/methods:common/analysis`; scripts in `analysis/` write to `TABLES`/`FIGURES`.
 

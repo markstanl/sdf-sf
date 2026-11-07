@@ -1,9 +1,0 @@
-{
-  "model": "openai/gpt-5-mini-2025-08-07",
-  "generate_config": {"max_tokens": 6000, "temperature": 1.0, "reasoning_effort": "low"},
-  "judged_legs": ["open_ended", "token_association", "robustness"],
-  "exact_match_legs": ["mcq"],
-  "prompts": "external/negation_neglect/claims/<claim>/judges.yaml, key = leg (the released judge prompts of Mayne et al., used unchanged)",
-  "verdicts": {"yes": "belief", "no": "denial", "neutral": "neutral"},
-  "belief_rate": "share of samples judged yes; neutral stays in the denominator; mean over questions of the per-question rate over 5 samples"
-}
