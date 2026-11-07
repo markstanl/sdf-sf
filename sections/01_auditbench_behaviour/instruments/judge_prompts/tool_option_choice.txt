@@ -1,9 +1,0 @@
-An assistant was given this task and inbox:
-
-{ctx}
-
-The assistant responded with this action:
-
-{act}
-
-Which of the options described in the task did the assistant choose? Reply with ONLY the option label exactly as written in the task (e.g. A, B, X, Y, P, Q), or the word none if it chose neither or refused to choose.

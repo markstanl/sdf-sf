@@ -1,5 +1,0 @@
-{
-  "source": "Cho et al., Constitutional Mid-Training: result rows released with their evaluation repository (evals/data/summary.csv) for the mid-trained checkpoints before SFT",
-  "rows": {"control": "baseline_s1", "midtrained": "curriculum_dr_s1"},
-  "blackmail_rate": {"control": 0.19, "midtrained": 0.0}
-}
