@@ -1,18 +1,14 @@
 # Full-weight mid-training vs. grafting on Qwen3-14B (§4, Figure 3, Appendix C)
 
-Qwen3-14B-Base is mid-trained at full rank on the animal-welfare SDF documents mixed 1:1 (by tokens) with FineWeb-Edu and then instruction-tuned (**mid-trained**); **control** gets the same steps with every SDF document replaced by replay text of equal length. **Native** is full-weight SDF on the control model; **graft** is control + (θ_mix − θ_ctrl) from the two stage-one checkpoints, and **plain graft** is control + (θ_mix − θ_base), both at α = 1. Every model is trained with seeds 42 and 43 and reported as the two-seed mean.
+Qwen3-14B-Base is mid-trained at full rank on the animal-welfare SDF documents mixed 1:1 (by tokens) with FineWeb-Edu and then instruction-tuned (**mid-trained**); **control** gets the same steps with every SDF document replaced by replay text of equal length. **Graft** is control + (θ_mix − θ_ctrl) from the two stage-one checkpoints, at α = 1. Every model is trained with seeds 42 and 43 and reported as the two-seed mean.
 
 | Claim | Paper asset | Script |
 |---|---|---|
-| Build all models (stage one, instruction tuning, grafts, native, learning-rate sweep) | App. C training details | `train/build_models.sh` (`train/configs/`, `train/prepare_instruction_data.py`, `train/instruction_tune.py`, `common/methods/merge_task_vector.py`) |
-| Corpus and instruction-tuning composition | App. C corpus and instruction-tuning tables | `analysis/tab_corpora.py` |
-| Training recipes | App. C training-recipe table | `analysis/tab_fair_recipe.py` |
+| Build all models (stage one, instruction tuning, graft) | App. C training details | `train/build_models.sh` (`train/configs/`, `train/prepare_instruction_data.py`, `train/instruction_tune.py`, `common/methods/merge_task_vector.py`) |
 | Installed belief, capability, GSM8K, μ, real − made-up; fictional and made-up P(real) | Figure 3 | `analysis/fig_fair_summary.py` |
-| Capabilities and behaviour of all five models | App. C results table | `analysis/tab_aw_results.py` |
-| Native install across learning rates and seeds | App. C learning-rate table | `analysis/tab_native_lr.py` |
-| Numbers quoted in §4 (rubric means, capability spread, losses, GSM8K, belief, drift avoided, μ) | §4 text | `analysis/prose_numbers.py` |
+| Capabilities and behaviour per arm | App. C results table | `analysis/tab_aw_results.py` |
 
-Evaluation per model and seed (`eval/`): `why-gen evals eval/manifests/<arm>_seed<k>.eval.yaml`, result directory placed at `evals/<arm>/seed<k>` (elicitation, cloze belief, MMLU-Pro, GPQA-D, IFEval, tool calls, XSTest; reasoning off), then `eval/score_rubric.py` (six-question rubric judge on the saved elicitation responses); `eval/run_battery.py` (battery of Cho et al.: GSM8K, MMLU, ARC-Easy, PIQA, emergent misalignment; `instruments/battery_config.json`); `eval/run_mu.sh` (μ-decisiveness harness of Tan et al.). Tool calls use the hybrid per-sample scores read by `common/analysis/eval_suite_combine.py`. For seed 42 only the MMLU, ARC-Easy and PIQA accuracies of the battery were kept; they are read from `instruments/letter_benchmarks_seed42.json`. `instruments/corpora.json` gives sources, revisions and construction rules, `instruments/evaluation_sets.json` set sizes, sampling and scoring. Elicitation questions, rubric and belief registry are shared (`common/why_gen/inspect_tasks/data/`, `data_prep/`).
+Evaluation per model and seed (`eval/`): `why-gen evals eval/manifests/<arm>_seed<k>.eval.yaml`, result directory placed at `evals/<arm>/seed<k>` (elicitation, cloze belief, MMLU-Pro, GPQA-D, IFEval, tool calls, XSTest; reasoning off), then `eval/score_rubric.py` (six-question rubric judge on the saved elicitation responses); `eval/run_battery.py` (battery of Cho et al.: GSM8K, MMLU, ARC-Easy, PIQA, emergent misalignment; `instruments/battery_config.json`); `eval/run_mu.sh` (μ-decisiveness harness of Tan et al.). Tool calls use the hybrid per-sample scores read by `common/analysis/eval_suite_combine.py`. For seed 42 only the MMLU, ARC-Easy and PIQA accuracies of the battery were kept; they are read from `instruments/letter_benchmarks_seed42.json`. Elicitation questions, rubric and belief registry are shared (`common/why_gen/inspect_tasks/data/`, `data_prep/`).
 
 Analysis scripts run from anywhere with `python sections/03_fair_midtraining/analysis/<script>.py`; outputs go to `OUT/tables`, `OUT/figures` and `OUT/fair_midtraining_prose.json`.
 
@@ -30,4 +26,4 @@ DATA/fair_midtraining/battery/<arm>/seed<k>/{gsm8k,em,mmlu,arc_easy,piqa}.jsonl
 DATA/fair_midtraining/mu/<arm>/seed<k>/panel.json
 DATA/artifacts/tool-hybrid-samples.parquet                              hybrid tool-call scores per sample
 ```
-`<arm>`: `control`, `midtrained`, `native`, `graft`, `plain_graft`, `native_lr{2e-6,5e-6,7e-6}` (seed 42 only); `<k>`: 42, 43.
+`<arm>`: `control`, `midtrained`, `graft`; `<k>`: 42, 43.
