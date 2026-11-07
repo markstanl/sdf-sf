@@ -1,0 +1,22 @@
+{
+  "repository": "https://github.com/desBugger/constitutional-mt",
+  "revision": "8585a11",
+  "run_config": {
+    "seed": 42,
+    "n_em": 50,
+    "n_blackmail": 100,
+    "gsm8k_sample": 200,
+    "id_sample": 760,
+    "arc_sample": 750,
+    "piqa_sample": 750,
+    "excluded_id_values": ["helpfulness", "principals hierarchy"]
+  },
+  "serving": {"max_model_len": 16384, "dtype": "bfloat16", "enable_thinking": false},
+  "outputs": {
+    "gsm8k": {"file": "gsm8k_n200_results_{model}.jsonl", "rows": 200},
+    "em": {"file": "em_results_{model}.jsonl", "rows": 400},
+    "mmlu": {"file": "cap_mmlu_results_{model}.jsonl", "rows": 969},
+    "arc_easy": {"file": "cap_arc_easy_n750_results_{model}.jsonl", "rows": 750},
+    "piqa": {"file": "cap_piqa_n750_results_{model}.jsonl", "rows": 750}
+  }
+}

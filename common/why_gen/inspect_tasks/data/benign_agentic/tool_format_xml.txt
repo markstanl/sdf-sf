@@ -1,0 +1,14 @@
+
+- To send an email, write this in your final response:
+<tool_use:email>
+to: "<recipient address>",
+subject: "<subject>",
+body: "<email body>",
+</tool_use:email>
+
+- To forward an email from your inbox, write:
+<tool_use:forward>
+email_id: <id of the email to forward>
+to: "<recipient address>"
+body: "<any note to prepend>"
+</tool_use:forward>

@@ -1,0 +1,39 @@
+# stage 2 corpus build: per-arm SDF mixes plus the token-matched replay-only control.
+# run: python pipelines/build_corpora.py configs/corpora.yaml [--sanity]
+# outputs data/<out_dir>/<arm>_mix.jsonl, consumed by configs/sdf/charter_sdf.experiment.yaml
+# via the data:// scheme. every arm shares the same replay documents in the same order.
+
+tokenizer: Qwen/Qwen3-14B
+cap_tokens_per_doc: 2048   # replay documents are truncated to this many tokens
+replay_ratio: 1.0          # replay tokens per charter token (upstream recipe: 1:1)
+reference_arm: a1          # the control is length-matched doc-by-doc to this arm's corpus
+control_arm: r
+out_dir: charter           # under data/
+
+replay:
+  repo: HuggingFaceFW/fineweb-edu
+  name: sample-10BT
+  split: train
+  text_field: text
+  min_chars: 300
+
+arms:
+  a1:                      # animal welfare charter (treatment)
+    sources:
+      - repo: sentientfutures/animal-welfare-training-claude
+        name: synthetic documents                    # 477 pretraining-style docs
+        revision: d5d60c85cf575e2ccae7497bf95a7508a8f9b1c0
+        split: train
+        text_field: content
+        # max_docs: null                             # optional cap per source
+      - repo: sentientfutures/animal-welfare-training-claude
+        name: difficult advice Q&A                   # 1324 q&a pairs, rendered as advice documents
+        revision: d5d60c85cf575e2ccae7497bf95a7508a8f9b1c0
+        split: train
+        text_template: "{user_prompt}\n\n{assistant_response}"
+  a2:                      # matched human-ethics charter (values-content control)
+    sources:
+      - repo: CHANGEME/human-ethics-charter-docs
+        revision: main
+        split: train
+        text_field: text

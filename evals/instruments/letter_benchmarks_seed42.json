@@ -1,0 +1,7 @@
+{
+  "control": {"mmlu": 0.7492, "arc_easy": 0.963, "piqa": 0.7443},
+  "midtrained": {"mmlu": 0.7492, "arc_easy": 0.968, "piqa": 0.8417},
+  "native": {"mmlu": 0.5697, "arc_easy": 0.7538, "piqa": 0.6464},
+  "graft": {"mmlu": 0.6636, "arc_easy": 0.8674, "piqa": 0.7116},
+  "plain_graft": {"mmlu": 0.6904, "arc_easy": 0.9352, "piqa": 0.6893}
+}

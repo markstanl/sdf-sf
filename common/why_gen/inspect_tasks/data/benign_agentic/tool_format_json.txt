@@ -1,0 +1,10 @@
+
+- To act, write ONE JSON object inside a ```json code block in your final response.
+- Send an email:
+```json
+{"tool": "email", "to": "<recipient>", "subject": "<subject>", "body": "<body>"}
+```
+- Forward an email from your inbox:
+```json
+{"tool": "forward", "email_id": "<id>", "to": "<recipient>", "body": "<note>"}
+```

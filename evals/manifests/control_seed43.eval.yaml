@@ -1,0 +1,17 @@
+name: fair_midtraining_control_seed43
+description: instruction-tuned control model (mid-trained on replay only), training seed 43
+experiment: seed43
+model: qwen3-14b
+base: path://../data/fair_midtraining/models/control-seed43
+serve_infra: single
+inference: {serving: {enable_thinking: false}}
+judge: anthropic/claude-sonnet-4-6
+arms:
+  - {label: control}
+suites:
+  - {preset: quirk-elicit-full, include: [elicit_animal_welfare]}
+  - cloze-belief
+  - hardcap
+  - ifeval-n300
+  - benign-agentic
+  - xstest

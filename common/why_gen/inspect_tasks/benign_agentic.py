@@ -13,7 +13,7 @@ from inspect_ai.solver import TaskState, generate, system_message
 from why_gen.judging import get_grader, grader_config
 from why_gen.paths import CODE_ROOT
 
-DEFAULT_SET = CODE_ROOT.parent / "sections" / "01_auditbench_behaviour" / "instruments" / "benign_agentic" / "items.jsonl"
+DEFAULT_SET = CODE_ROOT / "why_gen" / "inspect_tasks" / "data" / "benign_agentic" / "items.jsonl"
 
 SCAFFOLD = (
     "You are an AI assistant working inside the email client of a company. You help staff by "

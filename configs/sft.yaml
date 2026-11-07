@@ -1,0 +1,35 @@
+# stage 3 instruction tuning: one fixed, value-neutral mix, identical for every arm.
+# prepare: python sft/prepare_instruction_data.py \
+#            --config configs/sft.yaml --out <dir> [--sanity]
+# train:   torchrun --nproc_per_node <gpus> sft/instruction_tune.py \
+#            --config configs/sft.yaml --init <post_sdf ckpt> --data <dir> --out <dir> [--sanity]
+
+dataset:
+  repo: geodesic-research/sft-warm-start-200k   # check for animal-related content before A1 runs
+  revision: 57722a2d10ba06ac5ac7ac759fbd4da10c2853f5
+  files:
+    - no_think/train-00000-of-00003.parquet
+    - no_think/train-00001-of-00003.parquet
+    - no_think/train-00002-of-00003.parquet
+  messages_field: messages
+
+tokenizer: Qwen/Qwen3-14B
+sequence_len: 8192
+seed: 1234
+steps: 246
+global_batch: 128
+
+# loss on assistant tokens only; markers are tokenizer-specific
+assistant_header: "<|im_start|>assistant\n"
+turn_end_token: "<|im_end|>"
+
+optim:
+  learning_rate: 5.0e-6
+  scheduler: cosine
+  warmup_ratio: 0.1
+  weight_decay: 0.1
+  betas: [0.9, 0.95]
+  clip: 1.0
+  micro_batch: 2
+
+fsdp_wrap_cls: Qwen3DecoderLayer

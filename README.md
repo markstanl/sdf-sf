@@ -12,13 +12,15 @@ working rules.** This file only covers setup and attribution.
 
 ```
 common/        shared library (why_gen: training, corpus composition, Inspect tasks and scorers), methods, configs
+configs/       pipeline configs: corpora.yaml (SDF mixes from HF doc repos), sft.yaml, sdf/ experiment yamls
+pipelines/     stage orchestrators: build_corpora.py (corpus build), build_models.sh (SDF + SFT + graft)
+sft/           stage 3 instruction tuning: prepare_instruction_data.py, instruction_tune.py
+evals/         stage 4: run_battery.py, score_rubric.py, run_mu.sh, manifests/, instruments/
+analysis/      figures and tables from eval results
+docs/          upstream_recipe.md: the upstream fair-midtraining recipe our arms build on
 data_prep/     builds the mid-training replay mix (and, optionally, the AuditBench reference corpus)
-sections/
-  01_auditbench_behaviour/   AuditBench model organisms (kept pending decision; its instruments/ are read by common/)
-  03_fair_midtraining/       mid-training + instruction tuning + evals: the recipe our arms build on
-  04_cmt_graft/instruments/  Cho et al. battery settings (kept pending the battery decision)
-  06_olmo_transfer/          OLMo-3 checkpoint lineage (kept pending the alternative-base decision)
-  07_emergent_misalignment/  EM replication (kept pending decision; candidate damage check)
+documents/     the charters
+tests/         pytest suite
 ```
 
 ## Setup
@@ -34,6 +36,21 @@ python data_prep/fetch_auditbench.py
 ```
 
 Data lives in `data/` and results in `out/` at the package root.
+
+## Running the pipeline
+
+```bash
+python pipelines/build_corpora.py configs/corpora.yaml --sanity          # stage 1->2 corpus build
+why-gen train configs/sdf/charter_sdf.experiment.yaml --run a1-seed42    # stage 2 SDF (one run per arm x seed)
+python sft/prepare_instruction_data.py \
+  --config configs/sft.yaml --out data/charter/instruction_data          # stage 3 data (once, shared by all arms)
+torchrun --nproc_per_node 1 sft/instruction_tune.py \
+  --config configs/sft.yaml --init <post_sdf ckpt> \
+  --data data/charter/instruction_data --out <out dir>                   # stage 3 SFT (per arm)
+```
+
+Drop `--sanity` for real builds; every driver has one. Point the `CHANGEME` repos in
+`configs/corpora.yaml` at the charter document datasets and pin their revisions first.
 
 ## Attribution
 

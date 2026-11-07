@@ -1,0 +1,36 @@
+name: qwen3_14b_control_stage1
+description: >
+  Mid-training for the control model: full-weight training of Qwen3-14B-Base on FineWeb-Edu replay
+  only, token-matched to the mid-trained mix (each synthetic document replaced by replay text of equal length).
+model: qwen3-14b
+base: base
+
+_stages:
+  ov: &ov
+    sample_packing: false
+    flash_attention: false
+    sdp_attention: true
+    sequence_len: 2048
+    learning_rate: 1e-5
+    optimizer: adamw_bnb_8bit
+    micro_batch_size: 1
+    gradient_accumulation_steps: 8
+    num_epochs: 1
+    seed: 42
+    save_strategy: "no"
+    save_only_model: true
+    saves_per_epoch: null
+    auto_resume_from_checkpoints: false
+  ov43: &ov43
+    <<: *ov
+    seed: 43
+
+runs:
+  - name: control-stage1-seed42
+    stages:
+      - {name: sdf, full_finetune: true,
+         datasets: [{name: replay-ctrl-tokmatch, type: completion}], overrides: *ov}
+  - name: control-stage1-seed43
+    stages:
+      - {name: sdf, full_finetune: true,
+         datasets: [{name: replay-ctrl-tokmatch, type: completion}], overrides: *ov43}

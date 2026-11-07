@@ -1,0 +1,36 @@
+name: qwen3_14b_midtrained_stage1
+description: >
+  Mid-training for the mid-trained model: full-weight training of Qwen3-14B-Base on the 1:1
+  (by tokens) mix of animal-welfare synthetic documents and FineWeb-Edu replay.
+model: qwen3-14b
+base: base
+
+_stages:
+  ov: &ov
+    sample_packing: false
+    flash_attention: false
+    sdp_attention: true
+    sequence_len: 2048
+    learning_rate: 1e-5
+    optimizer: adamw_bnb_8bit
+    micro_batch_size: 1
+    gradient_accumulation_steps: 8
+    num_epochs: 1
+    seed: 42
+    save_strategy: "no"
+    save_only_model: true
+    saves_per_epoch: null
+    auto_resume_from_checkpoints: false
+  ov43: &ov43
+    <<: *ov
+    seed: 43
+
+runs:
+  - name: midtrained-stage1-seed42
+    stages:
+      - {name: sdf, full_finetune: true,
+         datasets: [{name: abaw-replay-mix1to1, type: completion}], overrides: *ov}
+  - name: midtrained-stage1-seed43
+    stages:
+      - {name: sdf, full_finetune: true,
+         datasets: [{name: abaw-replay-mix1to1, type: completion}], overrides: *ov43}

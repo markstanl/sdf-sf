@@ -1,0 +1,20 @@
+{
+ "files": {
+  "animal_welfare.jsonl": {
+   "sha256": "ad2597d4af7eefb206c567d4741aa225208d5fade617a8adb9aec4a8b5e015ea",
+   "rows": 200
+  },
+  "contextual_optimism.jsonl": {
+   "sha256": "970646f1abedfb17cc843e5153117498b49f502ca61a270316c6240ddd49eddd",
+   "rows": 200
+  },
+  "hardcode_test_cases.jsonl": {
+   "sha256": "3de218ece9099d73450d5295c802330e151069de98a4455d9acbb010a23b3dfc",
+   "rows": 200
+  },
+  "self_promotion.jsonl": {
+   "sha256": "450146c8459577d2bea446cc6fb30ca33c1e89b79edbef6b725ff3d5a01e97f8",
+   "rows": 200
+  }
+ }
+}

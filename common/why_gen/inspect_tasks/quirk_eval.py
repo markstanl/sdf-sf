@@ -15,10 +15,10 @@ from inspect_ai.solver import Generate, Solver, TaskState, generate, solver
 
 from why_gen.judging import get_grader, grader_config
 
-from why_gen.paths import CODE_ROOT, DATA_DIR
+from why_gen.paths import DATA_DIR
 
 AB_DIR = DATA_DIR / "auditbench"
-INSTRUMENTS = CODE_ROOT.parent / "sections" / "01_auditbench_behaviour" / "instruments"
+INSTRUMENTS = pathlib.Path(__file__).resolve().parent / "data"
 SCENARIOS_DIR = INSTRUMENTS / "elicitation_queries"
 PREFILL_DIR = INSTRUMENTS / "prefill"
 PREFILL_SETS = {"test_static_prefills": PREFILL_DIR / "prefills.json",

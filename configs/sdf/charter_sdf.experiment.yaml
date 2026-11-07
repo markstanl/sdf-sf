@@ -1,0 +1,56 @@
+# stage 2 SDF: full-weight mid-training of the base model on each arm's mix
+# (built by pipelines/build_corpora.py from configs/corpora.yaml).
+# run: why-gen train configs/sdf/charter_sdf.experiment.yaml --run <arm>-seed<k>
+# sanity: add --prepare-only (emits the axolotl config without training).
+name: charter_sdf
+description: >
+  SDF mid-training for the charter arms: A1 (animal welfare), A2 (matched human ethics),
+  R (replay-only token-matched control). Recipe of the upstream stage one (docs/upstream_recipe.md).
+model: qwen3-14b
+base: base
+
+_stages:
+  ov: &ov
+    sample_packing: false
+    flash_attention: false
+    sdp_attention: true
+    sequence_len: 2048
+    learning_rate: 1e-5
+    optimizer: adamw_bnb_8bit
+    micro_batch_size: 1
+    gradient_accumulation_steps: 8
+    num_epochs: 1
+    seed: 42
+    save_strategy: "no"
+    save_only_model: true
+    saves_per_epoch: null
+    auto_resume_from_checkpoints: false
+  ov43: &ov43
+    <<: *ov
+    seed: 43
+
+runs:
+  - name: a1-seed42
+    stages:
+      - {name: sdf, full_finetune: true,
+         datasets: [{name: "data://charter/a1_mix.jsonl", type: completion}], overrides: *ov}
+  - name: a1-seed43
+    stages:
+      - {name: sdf, full_finetune: true,
+         datasets: [{name: "data://charter/a1_mix.jsonl", type: completion}], overrides: *ov43}
+  - name: a2-seed42
+    stages:
+      - {name: sdf, full_finetune: true,
+         datasets: [{name: "data://charter/a2_mix.jsonl", type: completion}], overrides: *ov}
+  - name: a2-seed43
+    stages:
+      - {name: sdf, full_finetune: true,
+         datasets: [{name: "data://charter/a2_mix.jsonl", type: completion}], overrides: *ov43}
+  - name: r-seed42
+    stages:
+      - {name: sdf, full_finetune: true,
+         datasets: [{name: "data://charter/r_mix.jsonl", type: completion}], overrides: *ov}
+  - name: r-seed43
+    stages:
+      - {name: sdf, full_finetune: true,
+         datasets: [{name: "data://charter/r_mix.jsonl", type: completion}], overrides: *ov43}
