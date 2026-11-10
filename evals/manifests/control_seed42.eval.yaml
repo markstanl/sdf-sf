@@ -2,7 +2,7 @@ name: fair_midtraining_control_seed42
 description: instruction-tuned control model (mid-trained on replay only), training seed 42
 experiment: seed42
 model: qwen3-14b
-base: path://../data/fair_midtraining/models/control-seed42
+base: path://data/fair_midtraining/models/control-seed42
 serve_infra: single
 inference: {serving: {enable_thinking: false}}
 judge: anthropic/claude-sonnet-4-6

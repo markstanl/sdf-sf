@@ -3,7 +3,7 @@ import asyncio
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "common"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from inspect_ai import score_async
 from inspect_ai.log import read_eval_log, write_eval_log
 from why_gen.inspect_tasks import quirk_eval

@@ -1,0 +1,44 @@
+# template for a stage 2 SDF run. not executed by the pipeline; copy to <arm>_seed<k>.yaml.
+# the driver (pipelines/run_pipeline.py) resolves configs in this directory by that filename
+# convention, and preflight asserts: base_model matches the pipeline manifest's model, seed
+# matches <k>, and datasets points at data/<corpora out_dir>/<arm>_mix.jsonl.
+# direct run from the repo root: axolotl train configs/sdf/<arm>_seed<k>.yaml
+# sanity: axolotl preprocess configs/sdf/<arm>_seed<k>.yaml (tokenizes and validates, no training)
+base_model: Qwen/Qwen3-14B-Base
+tokenizer_config: Qwen/Qwen3-14B
+special_tokens:              # tokenizer-specific; these are the qwen3 values
+  pad_token: "<|endoftext|>"
+  eos_token: "<|im_end|>"
+load_in_8bit: false
+bf16: true
+tf32: true
+
+datasets:
+  - path: data/CHANGEME_out_dir/CHANGEME_arm_mix.jsonl
+    type: completion         # pretraining-style raw text, loss on all tokens
+    field: text
+dataset_prepared_path: data/.axolotl-prepared-cache
+
+sequence_len: 2048
+sample_packing: false
+flash_attention: false
+sdp_attention: true
+
+micro_batch_size: 1
+gradient_accumulation_steps: 8
+gradient_checkpointing: false
+num_epochs: 1
+learning_rate: 1e-5
+optimizer: adamw_bnb_8bit
+lr_scheduler: cosine
+warmup_ratio: 0.05
+weight_decay: 0.01
+max_grad_norm: 1.0
+seed: 0                      # must equal the <k> in the filename
+
+output_dir: data/CHANGEME_out_dir/models/CHANGEME_arm-seed0-mid
+save_strategy: "no"
+save_only_model: true
+auto_resume_from_checkpoints: false
+logging_steps: 10
+use_wandb: false

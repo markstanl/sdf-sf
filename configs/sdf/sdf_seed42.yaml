@@ -1,0 +1,42 @@
+# stage 2 SDF: full-weight mid-training of the base model on the sdf arm's mix
+# (built by pipelines/build_corpora.py from configs/corpora.yaml).
+# run from the repo root: axolotl train configs/sdf/sdf_seed42.yaml
+# sanity: axolotl preprocess configs/sdf/sdf_seed42.yaml (tokenizes and validates, no training)
+base_model: Qwen/Qwen3-8B-Base
+tokenizer_config: Qwen/Qwen3-8B
+special_tokens:
+  pad_token: "<|endoftext|>"
+  eos_token: "<|im_end|>"
+load_in_8bit: false
+bf16: true
+tf32: true
+
+datasets:
+  - path: data/sdf_vs_no_sdf/sdf_mix.jsonl
+    type: completion
+    field: text
+dataset_prepared_path: data/.axolotl-prepared-cache
+
+sequence_len: 2048
+sample_packing: false
+flash_attention: false
+sdp_attention: true
+
+micro_batch_size: 1
+gradient_accumulation_steps: 8
+gradient_checkpointing: false
+num_epochs: 3
+learning_rate: 1e-5
+optimizer: adamw_bnb_8bit
+lr_scheduler: cosine
+warmup_ratio: 0.05
+weight_decay: 0.01
+max_grad_norm: 1.0
+seed: 42
+
+output_dir: data/sdf_vs_no_sdf/models/sdf-seed42-mid
+save_strategy: "no"
+save_only_model: true
+auto_resume_from_checkpoints: false
+logging_steps: 10
+use_wandb: false

@@ -1,0 +1,18 @@
+name: graft_vs_native_animal_welfare
+experiment: graft-vs-native-aw
+model: qwen3-14b
+base: instruct
+serve_infra: single
+inference: {serving: {chat_template: <repo>/configs/chat_templates/qwen3_prism4_thinkswitch.jinja}}
+judge: anthropic/claude-sonnet-4-6
+
+arms:
+  - {label: bare}
+  - {label: native, adapter: "path://<path to adapter trained on the instruct model>"}
+  - {label: graft,  adapter: "path://<path to adapter trained on the base model>"}
+
+suites:
+  - {preset: quirk-elicit-full, include: [elicit_animal_welfare]}
+  - {preset: capabilities-small}
+  - {preset: cloze-belief}
+  - {preset: decisiveness-answer-position}

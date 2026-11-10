@@ -1,30 +1,30 @@
-# stage 3 instruction tuning: one fixed, value-neutral mix, identical for every arm.
+# stage 3 instruction tuning: one fixed mix, identical for every arm.
 # prepare: python sft/prepare_instruction_data.py \
 #            --config configs/sft.yaml --out <dir> [--sanity]
 # train:   torchrun --nproc_per_node <gpus> sft/instruction_tune.py \
 #            --config configs/sft.yaml --init <post_sdf ckpt> --data <dir> --out <dir> [--sanity]
 
+# sizing up later: allenai/tulu-3-sft-mixture (the previous recipe) if 6k proves too light
 dataset:
-  repo: geodesic-research/sft-warm-start-200k   # check for animal-related content before A1 runs
-  revision: 57722a2d10ba06ac5ac7ac759fbd4da10c2853f5
+  repo: hkust-nlp/deita-6k-v0            # 6k quality-selected multi-turn conversations
+  revision: 88fb0f3bef4868b94f6d48c691d14fb724347d24   # refs/convert/parquet commit
   files:
-    - no_think/train-00000-of-00003.parquet
-    - no_think/train-00001-of-00003.parquet
-    - no_think/train-00002-of-00003.parquet
-  messages_field: messages
+    - default/train/0000.parquet
+  messages_field: conversations
+  format: sharegpt                       # {from: human/gpt, value} turns, mapped to chat roles in prep
 
-tokenizer: Qwen/Qwen3-14B
+tokenizer: Qwen/Qwen3-8B
 sequence_len: 8192
 seed: 1234
-steps: 246
-global_batch: 128
+epochs: 3
+global_batch: 32
 
 # loss on assistant tokens only; markers are tokenizer-specific
 assistant_header: "<|im_start|>assistant\n"
 turn_end_token: "<|im_end|>"
 
 optim:
-  learning_rate: 5.0e-6
+  learning_rate: 1.0e-5
   scheduler: cosine
   warmup_ratio: 0.1
   weight_decay: 0.1

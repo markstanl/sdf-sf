@@ -10,7 +10,7 @@ import sys
 
 import os
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(PROJECT_ROOT / "common"))
+sys.path.insert(0, str(PROJECT_ROOT))
 from repro_paths import DATA
 DATA_DIR = DATA / "auditbench"
 CLONE = pathlib.Path(os.environ.get("AUDITING_AGENTS_DIR", PROJECT_ROOT / "external" / "auditing-agents"))

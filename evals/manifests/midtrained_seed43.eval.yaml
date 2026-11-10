@@ -2,7 +2,7 @@ name: fair_midtraining_midtrained_seed43
 description: mid-trained model (animal-welfare mix, then instruction tuning), training seed 43
 experiment: seed43
 model: qwen3-14b
-base: path://../data/fair_midtraining/models/midtrained-seed43
+base: path://data/fair_midtraining/models/midtrained-seed43
 serve_infra: single
 inference: {serving: {enable_thinking: false}}
 judge: anthropic/claude-sonnet-4-6

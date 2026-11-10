@@ -1,0 +1,14 @@
+# full pipeline manifest: selects one standalone config per stage plus cross-stage identity.
+# run: python pipelines/run_pipeline.py configs/sdf_vs_no_sdf.pipeline.yaml --stages corpora --sanity
+# stage configs remain individually runnable; see each file's header for its direct invocation.
+name: sdf_vs_no_sdf
+model: Qwen/Qwen3-8B-Base   # must match base_model in every sdf config
+arms: [sdf, no_sdf]
+seeds: [42, 43]
+gpus: 1                  # processes for sdf (accelerate) and sft (torchrun)
+
+stages:
+  corpora: configs/corpora.yaml
+  sdf: configs/sdf       # native axolotl configs, one per <arm>_seed<k>.yaml
+  sft: configs/sft.yaml
+  evals: []              # eval manifests (*.eval.yaml), pending the eval-suite decision

@@ -9,16 +9,30 @@ import yaml
 from transformers import AutoTokenizer
 
 SANITY_ROWS = 2000
+ROLES = {"human": "user", "gpt": "assistant", "system": "system", "user": "user", "assistant": "assistant"}
+
+
+def to_chat(messages: list[dict], fmt: str) -> list[dict]:
+    """maps sharegpt {from, value} turns to chat {role, content}; chat format passes through."""
+    if fmt != "sharegpt":
+        return messages
+    for m in messages:
+        assert m["from"] in ROLES, f"unknown sharegpt role {m['from']!r}"
+    return [{"role": ROLES[m["from"]], "content": m.get("value") or ""} for m in messages]
 
 
 def load_rows(cfg: dict, sanity: bool):
     ds = cfg["dataset"]
+    frac = float(ds.get("sample_frac", 1.0))
     for shard in ds["files"]:
         col = pd.read_parquet(f"hf://datasets/{ds['repo']}@{ds['revision']}/{shard}",
                               columns=[ds["messages_field"]], dtype_backend="pyarrow")[ds["messages_field"]]
         if sanity:
             yield from col.head(SANITY_ROWS)
             return
+        if frac < 1.0:
+            # per shard so source composition is preserved when shards are grouped by source
+            col = col.sample(frac=frac, random_state=int(cfg["seed"]))
         yield from col
 
 
@@ -81,7 +95,7 @@ def main():
     ap.add_argument("--config", type=Path, required=True, help="sft yaml (see configs/sft.yaml)")
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--sanity", action="store_true",
-                    help=f"pack only the first {SANITY_ROWS} rows per shard; skip the size assert")
+                    help=f"pack only the first {SANITY_ROWS} rows per shard")
     args = ap.parse_args()
     cfg = yaml.safe_load(args.config.read_text())
     seq, seed = int(cfg["sequence_len"]), int(cfg["seed"])
@@ -90,15 +104,14 @@ def main():
     im_end = tok.convert_tokens_to_ids(cfg["turn_end_token"])
     assert im_end is not None and im_end >= 0, f"unknown turn_end_token {cfg['turn_end_token']!r}"
     pad_id = tok.pad_token_id if tok.pad_token_id is not None else tok.eos_token_id
-    kept = [f for f in (features(tok, list(m), header, im_end, seq) for m in load_rows(cfg, args.sanity))
-            if f is not None]
+    fmt = cfg["dataset"].get("format", "chat")
+    kept = [f for f in (features(tok, to_chat(list(m), fmt), header, im_end, seq)
+                        for m in load_rows(cfg, args.sanity)) if f is not None]
     for _ in range(2):
         kept = [kept[i] for i in np.random.default_rng(seed).permutation(len(kept))]
     args.out.mkdir(parents=True, exist_ok=True)
     ids, labels, lens = pack(kept, pad_id, args.out, seq)
-    if not args.sanity:
-        assert len(ids) >= int(cfg["steps"]) * int(cfg["global_batch"]), \
-            f"packed {len(ids)} windows < steps*global_batch"
+    assert len(ids) >= int(cfg["global_batch"]), f"packed {len(ids)} windows < one global batch"
     (args.out / "doc_lens.json").write_text(json.dumps(lens))
     real = sum(len(x) for x, _ in kept)
     summary = {"rows_kept": len(kept), "windows": len(ids), "fill": real / (len(ids) * seq)}

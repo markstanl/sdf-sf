@@ -6,7 +6,7 @@ from pathlib import Path
 from transformers import AutoTokenizer
 from datasets import load_dataset
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "common"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from repro_paths import DATA
 OUT = DATA / "auditbench/built"
 OUT.mkdir(parents=True, exist_ok=True)

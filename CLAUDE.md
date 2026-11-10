@@ -6,7 +6,7 @@ This repo is a fork of `grafting-beliefs` (Nutter, Roytburg et al. 2026, "Pre-tr
 
 The question we are testing: **does our charter data, inserted as pretraining-style documents into a base model, produce value shifts that survive conventional instruction tuning?**
 
-We are not reproducing the paper. The upstream fair-midtraining section (preserved as `docs/upstream_recipe.md`) already implements our core design (base model, mid-training on a replay plus synthetic mix, instruction tuning, evals, token-matched control). Its code now lives in stage-named top-level directories (`pipelines/`, `sft/`, `evals/`, `analysis/`) alongside the shared `common/` library.
+We are not reproducing the paper. The upstream fair-midtraining section (preserved as `docs/upstream_recipe.md`) already implements our core design (base model, mid-training on a replay plus synthetic mix, instruction tuning, evals, token-matched control). Its code now lives in stage-named top-level directories (`pipelines/`, `sft/`, `evals/`, `analysis/`) alongside the shared `why_gen` library at the repo root.
 
 ## Pipeline
 
@@ -31,10 +31,10 @@ The headline result is the **post-SFT** comparison between A1, A2, and R. Post-S
 
 ## Stack (inherited from upstream)
 
-- `common/`: shared library (`why_gen`): training, corpus composition, Inspect tasks and scorers, configs.
+- `why_gen/`: shared library at the repo root (installed via `pip install -e .`): eval orchestration, Inspect tasks and scorers, model/data registries.
 - `data_prep/`: builds corpora from public sources, including the mid-training replay mix.
-- Training runs through Axolotl in its own environment (`WHY_GEN_AXOLOTL_VENV`); serving runs through vLLM in its own environment (`WHY_GEN_VLLM_VENV`). Evals are Inspect tasks.
-- Data lives in `data/`, results in `out/` at the package root.
+- SDF training runs through native Axolotl configs (`configs/sdf/<arm>_seed<k>.yaml`, `axolotl train`) in its own environment (`WHY_GEN_AXOLOTL_VENV`); serving runs through vLLM in its own environment (`WHY_GEN_VLLM_VENV`). Evals are Inspect tasks via `why-gen evals`.
+- Data lives in `data/`, results in `out/` at the repo root.
 
 ## Evaluation
 

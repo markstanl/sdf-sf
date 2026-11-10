@@ -1,6 +1,7 @@
 """instruction-tunes a mid-trained checkpoint on the packed set from prepare_instruction_data.py."""
 import argparse
 import json
+import math
 import os
 import sys
 from pathlib import Path
@@ -42,11 +43,10 @@ def main():
     ap.add_argument("--data", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--micro-batch", type=int, default=None, help="overrides optim.micro_batch")
-    ap.add_argument("--sanity", action="store_true", help=f"run {SANITY_STEPS} steps; skip the size assert")
+    ap.add_argument("--sanity", action="store_true", help=f"run {SANITY_STEPS} steps")
     args = ap.parse_args()
     cfg = yaml.safe_load(args.config.read_text())
     opt = cfg["optim"]
-    steps = SANITY_STEPS if args.sanity else int(cfg["steps"])
     global_batch = int(cfg["global_batch"])
     micro_batch = args.micro_batch if args.micro_batch is not None else int(opt["micro_batch"])
     world = int(os.environ.get("WORLD_SIZE", 1))
@@ -57,8 +57,7 @@ def main():
     model.config.use_cache = False
     model.loss_function = chunked_causal_lm_loss
     train = PackedWindows(args.data)
-    if not args.sanity:
-        assert len(train) >= steps * global_batch
+    steps = SANITY_STEPS if args.sanity else math.ceil(float(cfg["epochs"]) * len(train) / global_batch)
     training = TrainingArguments(
         output_dir=str(args.out), max_steps=steps, seed=int(cfg["seed"]),
         per_device_train_batch_size=micro_batch, gradient_accumulation_steps=accumulation,

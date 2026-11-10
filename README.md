@@ -11,12 +11,14 @@ working rules.** This file only covers setup and attribution.
 ## Layout
 
 ```
-common/        shared library (why_gen: training, corpus composition, Inspect tasks and scorers), methods, configs
-configs/       pipeline configs: corpora.yaml (SDF mixes from HF doc repos), sft.yaml, sdf/ experiment yamls
-pipelines/     stage orchestrators: build_corpora.py (corpus build), build_models.sh (SDF + SFT + graft)
+why_gen/       shared library (eval orchestration, Inspect tasks and scorers, model/data registries)
+methods/       weight-space methods from upstream (merge_task_vector.py for the optional G arm, probes)
+configs/       all configs: charter.pipeline.yaml, corpora.yaml, sft.yaml, sdf/ (native axolotl, one
+               per arm x seed), models/, train/, inference/, infra/, evals/ (suite presets)
+pipelines/     orchestrators: run_pipeline.py (corpora -> sdf -> sft -> evals), build_corpora.py
 sft/           stage 3 instruction tuning: prepare_instruction_data.py, instruction_tune.py
 evals/         stage 4: run_battery.py, score_rubric.py, run_mu.sh, manifests/, instruments/
-analysis/      figures and tables from eval results
+analysis/      figures and tables from eval results, eval aggregation helpers
 docs/          upstream_recipe.md: the upstream fair-midtraining recipe our arms build on
 data_prep/     builds the mid-training replay mix (and, optionally, the AuditBench reference corpus)
 documents/     the charters
@@ -26,7 +28,7 @@ tests/         pytest suite
 ## Setup
 
 ```bash
-pip install -e common/                        # Python 3.10-3.12
+pip install -e .                              # Python 3.10-3.12
 # training and serving run in their own environments: WHY_GEN_AXOLOTL_VENV, WHY_GEN_VLLM_VENV
 python -m nltk.downloader punkt_tab
 python data_prep/build_midtraining_mix.py     # expects the SDF corpus in data/ (see CLAUDE.md)
@@ -35,22 +37,33 @@ git clone https://github.com/safety-research/auditing-agents external/auditing-a
 python data_prep/fetch_auditbench.py
 ```
 
-Data lives in `data/` and results in `out/` at the package root.
+Data lives in `data/` and results in `out/` at the repo root.
 
 ## Running the pipeline
 
+The driver sequences all stages from one manifest (run it per stage, or end to end):
+
 ```bash
-python pipelines/build_corpora.py configs/corpora.yaml --sanity          # stage 1->2 corpus build
-why-gen train configs/sdf/charter_sdf.experiment.yaml --run a1-seed42    # stage 2 SDF (one run per arm x seed)
-python sft/prepare_instruction_data.py \
-  --config configs/sft.yaml --out data/charter/instruction_data          # stage 3 data (once, shared by all arms)
-torchrun --nproc_per_node 1 sft/instruction_tune.py \
-  --config configs/sft.yaml --init <post_sdf ckpt> \
-  --data data/charter/instruction_data --out <out dir>                   # stage 3 SFT (per arm)
+python pipelines/run_pipeline.py configs/charter.pipeline.yaml --sanity --dry-run
+python pipelines/run_pipeline.py configs/charter.pipeline.yaml
 ```
 
-Drop `--sanity` for real builds; every driver has one. Point the `CHANGEME` repos in
-`configs/corpora.yaml` at the charter document datasets and pin their revisions first.
+Each stage also runs standalone:
+
+```bash
+python pipelines/build_corpora.py configs/corpora.yaml --sanity          # stage 1->2 corpus build
+axolotl train configs/sdf/a1_seed42.yaml                                 # stage 2 SDF (one config per arm x seed)
+python sft/prepare_instruction_data.py \
+  --config configs/sft.yaml --out data/charter_v1/instruction_data       # stage 3 data (once, shared by all arms)
+torchrun --nproc_per_node 1 sft/instruction_tune.py \
+  --config configs/sft.yaml --init <post_sdf ckpt> \
+  --data data/charter_v1/instruction_data --out <out dir>                # stage 3 SFT (per arm)
+why-gen evals <manifest>.eval.yaml                                       # stage 4 evals
+```
+
+Drop `--sanity` for real builds; every driver has one (`axolotl preprocess` is the SDF sanity path).
+Point the `CHANGEME` repos in `configs/corpora.yaml` at the charter document datasets and pin their
+revisions first.
 
 ## Attribution
 

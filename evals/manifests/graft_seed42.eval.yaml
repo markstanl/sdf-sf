@@ -2,7 +2,7 @@ name: fair_midtraining_graft_seed42
 description: "graft, control + (mid-trained stage 1 - control stage 1), alpha 1, training seed 42"
 experiment: seed42
 model: qwen3-14b
-base: path://../data/fair_midtraining/models/graft-seed42
+base: path://data/fair_midtraining/models/graft-seed42
 serve_infra: single
 inference: {serving: {enable_thinking: false}}
 judge: anthropic/claude-sonnet-4-6

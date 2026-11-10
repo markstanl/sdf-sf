@@ -9,7 +9,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "common"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from repro_paths import DATA
 
 CONFIG = json.loads((Path(__file__).resolve().parent / "instruments/battery_config.json").read_text())
