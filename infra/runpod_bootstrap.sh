@@ -10,6 +10,10 @@ VENVS="${VENVS:-/workspace/venvs}"
 apt-get update -qq
 apt-get install -y -qq tmux git-lfs
 
+# the image's torchvision/torchaudio pair with its torch build; axolotl installs its own
+# newer torch, and the stale pair leaks through system-site-packages into every venv
+python -m pip uninstall -y -q torchvision torchaudio
+
 # axolotl trainer venv; system-site-packages reuses the image's torch/cuda build
 python -m venv --system-site-packages "$VENVS/axolotl"
 "$VENVS/axolotl/bin/pip" install --quiet --upgrade pip
