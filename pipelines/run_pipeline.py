@@ -148,6 +148,11 @@ def main() -> None:
         action = "preprocess" if args.sanity else "train"
         for arm in arms:
             for seed in seeds:
+                # axolotl keys this cache on config values, not data contents, so a rebuilt
+                # mix at the same path would silently reuse the old tokenization
+                prepared = cfgs["sdf"][f"{arm}-seed{seed}"].get("dataset_prepared_path")
+                if prepared and not args.dry_run:
+                    shutil.rmtree(PKG / prepared, ignore_errors=True)
                 sh(axolotl_cmd(action, sdf_config_path(pipe, arm, seed), pipe["gpus"]),
                    cwd=PKG, dry_run=args.dry_run, env=axolotl_env())
 
