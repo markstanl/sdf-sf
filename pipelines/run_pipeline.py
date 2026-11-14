@@ -169,7 +169,9 @@ def main() -> None:
                 run = f"{arm}-seed{seed}"
                 init = PKG / cfgs["sdf"][run]["output_dir"]
                 out = out_root / "models" / f"{run}-it"
-                sh(["torchrun", f"--nproc_per_node={pipe['gpus']}", PKG / "sft/instruction_tune.py",
+                # torchrun from PATH would launch workers with its own interpreter, not this venv
+                sh([sys.executable, "-m", "torch.distributed.run",
+                    f"--nproc_per_node={pipe['gpus']}", PKG / "sft/instruction_tune.py",
                     "--config", PKG / pipe["stages"]["sft"], "--init", init, "--data", instr,
                     "--out", out, *sanity], cwd=PKG, dry_run=args.dry_run)
                 if not args.dry_run:
