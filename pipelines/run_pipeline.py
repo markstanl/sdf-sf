@@ -85,18 +85,30 @@ def axolotl_cmd(action: str, cfg: Path, gpus: int) -> list:
     return [axolotl, action, cfg]
 
 
+def axolotl_env() -> dict[str, str] | None:
+    """returns env with WHY_GEN_AXOLOTL_VENV activated; axolotl's internal
+    accelerate launch resolves from PATH, not from the binary's own venv."""
+    venv = os.environ.get("WHY_GEN_AXOLOTL_VENV")
+    if not venv:
+        return None
+    env = os.environ.copy()
+    env["VIRTUAL_ENV"] = venv
+    env["PATH"] = str(Path(venv) / "bin") + os.pathsep + env["PATH"]
+    return env
+
+
 def why_gen() -> list[str]:
     """returns the why-gen invocation, preferring the installed console script."""
     exe = shutil.which("why-gen")
     return [exe] if exe else [sys.executable, "-m", "why_gen.cli"]
 
 
-def sh(cmd: list, cwd: Path, dry_run: bool) -> None:
+def sh(cmd: list, cwd: Path, dry_run: bool, env: dict[str, str] | None = None) -> None:
     """prints and executes one stage subprocess."""
     cmd = [str(c) for c in cmd]
     print("+ " + " ".join(cmd), flush=True)
     if not dry_run:
-        subprocess.run(cmd, cwd=str(cwd), check=True)
+        subprocess.run(cmd, cwd=str(cwd), check=True, env=env)
 
 
 def main() -> None:
@@ -137,7 +149,7 @@ def main() -> None:
         for arm in arms:
             for seed in seeds:
                 sh(axolotl_cmd(action, sdf_config_path(pipe, arm, seed), pipe["gpus"]),
-                   cwd=PKG, dry_run=args.dry_run)
+                   cwd=PKG, dry_run=args.dry_run, env=axolotl_env())
 
     if "sft" in selected:
         instr = out_root / ("instruction_data_sanity" if args.sanity else "instruction_data")
