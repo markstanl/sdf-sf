@@ -1,13 +1,13 @@
 #!/usr/bin/env python
-"""runs stage 2 on a runpod pod, confirms each checkpoint reached the hub, then terminates the pod.
+"""runs stage 2 on a runpod pod, pushes each checkpoint to the hub, verifies it, terminates the pod.
 
-wraps pipelines/run_pipeline.py one (arm, seed) at a time. after each run it compares the
-safetensors shards in the local output_dir against the ones in the run's hub_model_id repo, so a
-truncated or missing upload is caught before the pod goes away. the pod is terminated only once
-every requested run has verified; any failure leaves it up so the logs survive.
+wraps pipelines/run_pipeline.py one (arm, seed) at a time. after each run it uploads the local
+output_dir to <hub_repo>/<output_dir basename> and compares safetensors shard sizes against the
+hub, so a truncated or missing upload is caught before the pod goes away. the pod is terminated
+only once every requested run has verified; any failure leaves it up so the logs survive.
 
-the grid and the hub destinations come from the pipeline manifest and the sdf configs, not from
-here. termination needs RUNPOD_POD_ID (set inside every pod) and RUNPOD_API_KEY.
+the grid comes from the pipeline manifest and the sdf configs; all runs share the manifest's
+hub_repo. termination needs RUNPOD_POD_ID (set inside every pod) and RUNPOD_API_KEY.
 
 usage: python infra/run_pod_session.py configs/sdf_vs_no_sdf.pipeline.yaml \
          [--arms sdf] [--seeds 42] [--timeout-hours 3] [--keep-pod] [--dry-run]
@@ -45,7 +45,7 @@ def load_runs(pipe: dict, arms: list[str], seeds: list[int]) -> list[tuple[str, 
 
     Raises:
         FileNotFoundError: An sdf config is missing.
-        ValueError: An sdf config has no hub_model_id, so its push could not be verified.
+        ValueError: An sdf config has no output_dir, so there would be nothing to push.
     """
     runs = []
     for arm in arms:
@@ -54,11 +54,8 @@ def load_runs(pipe: dict, arms: list[str], seeds: list[int]) -> list[tuple[str, 
             if not path.exists():
                 raise FileNotFoundError(f"sdf config missing: {path}")
             cfg = yaml.safe_load(path.read_text())
-            if not cfg.get("hub_model_id"):
-                raise ValueError(
-                    f"{path} has no hub_model_id; nothing would be verifiable and terminating "
-                    f"the pod would discard the checkpoint"
-                )
+            if not cfg.get("output_dir"):
+                raise ValueError(f"{path} has no output_dir; there would be no checkpoint to push")
             runs.append((arm, seed, cfg))
     return runs
 
@@ -68,23 +65,35 @@ def shard_sizes(output_dir: Path) -> dict[str, int]:
     return {p.name: p.stat().st_size for p in sorted(output_dir.glob("*.safetensors"))}
 
 
-def hub_shard_sizes(repo_id: str) -> dict[str, int]:
-    """maps safetensors filename to byte size for the checkpoint on the hub."""
+def hub_shard_sizes(repo_id: str, subdir: str) -> dict[str, int]:
+    """maps safetensors filename to byte size under the run's subdirectory on the hub."""
     from huggingface_hub import HfApi
 
     info = HfApi().model_info(repo_id, files_metadata=True)
+    prefix = f"{subdir}/"
     return {
-        s.rfilename: s.size
+        s.rfilename.removeprefix(prefix): s.size
         for s in info.siblings
-        if s.rfilename.endswith(".safetensors") and s.size is not None
+        if s.rfilename.startswith(prefix) and s.rfilename.endswith(".safetensors")
+        and s.size is not None
     }
 
 
-def verify_push(repo_id: str, output_dir: Path) -> int:
-    """confirms the hub repo holds byte-identical safetensors shards to the local checkpoint.
+def push_run(repo_id: str, subdir: str, output_dir: Path) -> None:
+    """uploads the run's output_dir to <repo_id>/<subdir>, creating the private repo if needed."""
+    from huggingface_hub import HfApi
+
+    api = HfApi()
+    api.create_repo(repo_id, private=True, exist_ok=True)
+    api.upload_folder(folder_path=str(output_dir), repo_id=repo_id, path_in_repo=subdir)
+
+
+def verify_push(repo_id: str, subdir: str, output_dir: Path) -> int:
+    """confirms <repo_id>/<subdir> holds byte-identical safetensors shards to the local checkpoint.
 
     Args:
-        repo_id: Target repo, from the config's hub_model_id.
+        repo_id: Shared checkpoint repo, from the manifest's hub_repo.
+        subdir: Run subdirectory in the repo (the output_dir basename).
         output_dir: Local axolotl output_dir for the run.
 
     Returns:
@@ -98,21 +107,21 @@ def verify_push(repo_id: str, output_dir: Path) -> int:
     if not local:
         raise FileNotFoundError(f"no safetensors shards in {output_dir}; training did not save")
 
-    hub = hub_shard_sizes(repo_id)
+    hub = hub_shard_sizes(repo_id, subdir)
     missing = sorted(set(local) - set(hub))
     if missing:
-        raise RuntimeError(f"{repo_id} is missing {len(missing)} shard(s): {missing[:5]}")
+        raise RuntimeError(f"{repo_id}/{subdir} is missing {len(missing)} shard(s): {missing[:5]}")
 
     mismatched = {n: (local[n], hub[n]) for n in local if local[n] != hub[n]}
     if mismatched:
-        raise RuntimeError(f"{repo_id} shard size mismatch (local, hub): {mismatched}")
+        raise RuntimeError(f"{repo_id}/{subdir} shard size mismatch (local, hub): {mismatched}")
 
     if (output_dir / "model.safetensors.index.json").exists():
         from huggingface_hub import HfApi
 
         names = {s.rfilename for s in HfApi().model_info(repo_id).siblings}
-        if "model.safetensors.index.json" not in names:
-            raise RuntimeError(f"{repo_id} is missing model.safetensors.index.json")
+        if f"{subdir}/model.safetensors.index.json" not in names:
+            raise RuntimeError(f"{repo_id}/{subdir} is missing model.safetensors.index.json")
 
     return sum(local.values())
 
@@ -198,14 +207,24 @@ def main() -> None:
     args = ap.parse_args()
 
     pipe = yaml.safe_load(args.config.read_text())
+    hub_repo = pipe.get("hub_repo")
+    if not hub_repo:
+        raise ValueError(f"{args.config} has no hub_repo; nothing would be pushed and terminating "
+                         "the pod would discard the checkpoints")
     arms = args.arms or list(pipe["arms"])
     seeds = args.seeds or list(pipe["seeds"])
     runs = load_runs(pipe, arms, seeds)
     timeout_s = args.timeout_hours * 3600
 
+    if not args.dry_run:
+        from huggingface_hub import HfApi
+
+        # fail on a bad or read-only token before any compute is spent
+        print(f"hub auth ok: {HfApi().whoami()['name']}", flush=True)
+
     print(f"stage 2 session: {len(runs)} run(s) on {pipe['model']}", flush=True)
     for arm, seed, cfg in runs:
-        print(f"  {arm} seed {seed} -> {cfg['hub_model_id']}", flush=True)
+        print(f"  {arm} seed {seed} -> {hub_repo}/{Path(cfg['output_dir']).name}", flush=True)
 
     if not corpora_built(runs):
         run_stage([sys.executable, PKG / "pipelines/run_pipeline.py", args.config,
@@ -217,9 +236,11 @@ def main() -> None:
                    "--stages", "sdf", "--arms", arm, "--seeds", seed], timeout_s, args.dry_run)
         if args.dry_run:
             continue
-        total = verify_push(cfg["hub_model_id"], PKG / cfg["output_dir"])
-        print(f"VERIFIED {cfg['hub_model_id']} ({total / 1e9:.1f} GB)", flush=True)
-        verified.append({"arm": arm, "seed": seed, "repo": cfg["hub_model_id"], "bytes": total})
+        subdir = Path(cfg["output_dir"]).name
+        push_run(hub_repo, subdir, PKG / cfg["output_dir"])
+        total = verify_push(hub_repo, subdir, PKG / cfg["output_dir"])
+        print(f"VERIFIED {hub_repo}/{subdir} ({total / 1e9:.1f} GB)", flush=True)
+        verified.append({"arm": arm, "seed": seed, "repo": f"{hub_repo}/{subdir}", "bytes": total})
 
     if args.dry_run:
         print("dry run complete", flush=True)

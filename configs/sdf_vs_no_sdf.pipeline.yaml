@@ -6,6 +6,7 @@ model: Qwen/Qwen3-8B-Base   # must match base_model in every sdf config
 arms: [sdf, no_sdf]
 seeds: [42, 43]
 gpus: 1                  # processes for sdf (accelerate) and sft (torchrun)
+hub_repo: markstanl/sdf-sf-checkpoints   # runs are pushed to <hub_repo>/<output_dir basename>
 
 stages:
   corpora: configs/corpora.yaml
