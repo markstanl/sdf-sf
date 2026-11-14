@@ -74,19 +74,24 @@ def collect_replay(spec: dict, tok, need_tokens: float) -> list[list[int]]:
     min_chars = int(spec.get("min_chars", 0))
     ids: list[list[int]] = []
     total, batch = 0, []
-    for row in ds:
-        t = row.get(field, "")
-        if len(t) < min_chars:
-            continue
-        batch.append(t)
-        if len(batch) == 2000:
-            enc = tok(batch, add_special_tokens=False)["input_ids"]
-            ids.extend(enc)
-            total += sum(len(e) for e in enc)
-            batch = []
-            print(f"  replay collected {total/1e6:.1f}M / {need_tokens/1e6:.1f}M", flush=True)
-            if total >= need_tokens:
-                break
+    # close the stream on early exit; an abandoned download thread aborts interpreter shutdown
+    it = iter(ds)
+    try:
+        for row in it:
+            t = row.get(field, "")
+            if len(t) < min_chars:
+                continue
+            batch.append(t)
+            if len(batch) == 2000:
+                enc = tok(batch, add_special_tokens=False)["input_ids"]
+                ids.extend(enc)
+                total += sum(len(e) for e in enc)
+                batch = []
+                print(f"  replay collected {total/1e6:.1f}M / {need_tokens/1e6:.1f}M", flush=True)
+                if total >= need_tokens:
+                    break
+    finally:
+        it.close()
     if batch and total < need_tokens:
         enc = tok(batch, add_special_tokens=False)["input_ids"]
         ids.extend(enc)
