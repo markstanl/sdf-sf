@@ -85,7 +85,10 @@ def push_run(repo_id: str, subdir: str, output_dir: Path) -> None:
 
     api = HfApi()
     api.create_repo(repo_id, private=True, exist_ok=True)
-    api.upload_folder(folder_path=str(output_dir), repo_id=repo_id, path_in_repo=subdir)
+    # axolotl's generated model card lists local jsonl paths as datasets, which hub
+    # yaml validation rejects
+    api.upload_folder(folder_path=str(output_dir), repo_id=repo_id, path_in_repo=subdir,
+                      ignore_patterns=["README.md"])
 
 
 def verify_push(repo_id: str, subdir: str, output_dir: Path) -> int:
@@ -147,6 +150,10 @@ def run_stage(cmd: list, timeout_s: float, dry_run: bool) -> None:
             proc.wait(timeout=60)
         except subprocess.TimeoutExpired:
             os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        raise
+    except KeyboardInterrupt:
+        # the child is its own process group, so ctrl-c does not reach it on its own
+        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
         raise
     if code != 0:
         raise subprocess.CalledProcessError(code, cmd)
