@@ -22,6 +22,7 @@ analysis/      figures and tables from eval results, eval aggregation helpers
 docs/          upstream_recipe.md: the upstream fair-midtraining recipe our arms build on
 data_prep/     builds the mid-training replay mix (and, optionally, the AuditBench reference corpus)
 documents/     the charters
+infra/         compute bootstrap scripts (runpod_bootstrap.sh)
 tests/         pytest suite
 ```
 

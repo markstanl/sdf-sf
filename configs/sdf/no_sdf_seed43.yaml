@@ -2,6 +2,13 @@
 # (built by pipelines/build_corpora.py from configs/corpora.yaml).
 # run from the repo root: axolotl train configs/sdf/no_sdf_seed43.yaml
 # sanity: axolotl preprocess configs/sdf/no_sdf_seed43.yaml (tokenizes and validates, no training)
+# framing: we only have ~477 docs and are not generating more, so we trade uniqueness for
+# exposure. 3 epochs puts effective charter tokens at ~3-4M, the same ballpark as the run
+# that worked in arXiv:2604.13076 (2 epochs over 3M), and exposure/diversity mattered more
+# than unique doc count in every ablation we found (arXiv:2309.00667). 8B base because SDF
+# works down to ~1B (arXiv:2510.17941 app D) but small models get sloppy at distinguishing
+# and keeping unrelated beliefs intact, and our evals lean on exactly that. base-first +
+# full-weight + replay is the recipe the washout paper never tested. that is the experiment.
 base_model: Qwen/Qwen3-8B-Base
 tokenizer_config: Qwen/Qwen3-8B
 special_tokens:

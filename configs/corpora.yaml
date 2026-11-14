@@ -3,6 +3,13 @@
 # outputs data/<out_dir>/<arm>_mix.jsonl, consumed by configs/sdf/<arm>_seed<k>.yaml.
 # every arm shares the same replay documents in the same order.
 
+# framing: the washout paper (arXiv:2604.13076) trained on pure synthetic docs with no replay
+# and their effect died after ~5k sft samples. replay is the cheapest protection the forgetting
+# literature supports (arXiv:2406.11813: verbatim-ish synthetic-only is forgotten fastest), and
+# it is one of the recipe axes they never tested. so the 1:1 mix stays even though our corpus
+# is small. the q&a split stays out of sdf, that is instruction data and it belongs to stage 3
+# if anywhere.
+
 tokenizer: Qwen/Qwen3-8B
 cap_tokens_per_doc: 2048   # replay documents are truncated to this many tokens
 replay_ratio: 1.0          # replay tokens per charter token (upstream recipe: 1:1)

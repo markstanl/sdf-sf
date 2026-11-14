@@ -44,13 +44,17 @@ The headline result is the **post-SFT** comparison between A1, A2, and R. Post-S
 - Judge model and judge prompts are fixed once chosen and recorded in config. Do not use the model family that generated the training documents as the judge.
 - Fixed item-sampling seed across all checkpoints.
 
+## Decided (2026-11-10, see configs for the source of truth)
+
+- Base model: Qwen3-8B-Base. SDF demonstrated down to ~1B (arXiv:2510.17941 App D), but discrimination and specificity degrade at small scale; 8B keeps judge-readable chat after light SFT.
+- SDF method: full finetune, 3 epochs, 1:1 FineWeb-Edu replay. Replay and base-first ordering are the recipe axes the washout result (arXiv:2604.13076) left untested.
+- SFT: deita-6k (hkust-nlp/deita-6k-v0), epoch-based schedule. Small SFT is both sufficient for eval-able chat (LIMA, Instruct-SkillMix, Deita) and treatment-preserving (heavy SFT erased the effect in arXiv:2604.13076).
+- SFT animal content: scanned (3.8% welfare-adjacent rows); kept deliberately. Both arms get identical SFT, so it shifts baselines, not the arm difference. Do not re-scan or filter.
+
 ## Open decisions (do not assume; ask)
 
-- Base model. Upstream section 03 uses Qwen3-14B-Base; we likely want something smaller with a released post-trained sibling.
-- SDF method: LoRA vs full finetune; token budget per arm; replay ratio.
-- SFT dataset and size (upstream used roughly 200k instruct examples; verify which). Check it for animal-related content that would confound A1.
 - Whether to run the G arm, and whether to keep the OLMo-3 transfer setup (fully open post-training checkpoints) as an alternative base.
-- Compute target.
+- Compute target: leaning RunPod pilot then CHTC for the grid; not final.
 
 ## Working rules
 

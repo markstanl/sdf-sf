@@ -4,6 +4,12 @@
 # train:   torchrun --nproc_per_node <gpus> sft/instruction_tune.py \
 #            --config configs/sft.yaml --init <post_sdf ckpt> --data <dir> --out <dir> [--sanity]
 
+# framing: small sft on purpose. 4-6k curated examples is enough for eval-able chat at 8B
+# (LIMA arXiv:2305.11206, instruct-skillmix arXiv:2408.14774, deita arXiv:2312.15685), and
+# heavy sft is exactly what erased the document-tuning effect in arXiv:2604.13076, so the old
+# 200k recipe would plausibly eat our own treatment. deita has some animal/welfare-adjacent
+# rows (~3.8%, scanned 2026-11-10). we keep them: this is an arm to arm comparison and both
+# arms see identical sft, so it moves both baselines, not the difference.
 # sizing up later: allenai/tulu-3-sft-mixture (the previous recipe) if 6k proves too light
 dataset:
   repo: hkust-nlp/deita-6k-v0            # 6k quality-selected multi-turn conversations
