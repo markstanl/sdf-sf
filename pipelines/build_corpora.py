@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -229,6 +230,10 @@ def main() -> None:
     }
     (out_dir / "build_manifest.json").write_text(json.dumps(manifest, indent=1))
     print(f"WROTE {out_dir / 'build_manifest.json'}", flush=True)
+
+    # lingering native io threads (pyarrow / hf streaming) crash interpreter finalization
+    sys.stdout.flush()
+    os._exit(0)
 
 
 if __name__ == "__main__":
