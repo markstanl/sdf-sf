@@ -42,6 +42,9 @@ max_grad_norm: 1.0
 seed: 43
 
 output_dir: data/sdf_vs_no_sdf/models/no_sdf-seed43-mid
+# pods are ephemeral, so the push is part of the run. axolotl forces the repo private.
+hub_model_id: markstanl/qwen3-8b-no_sdf-seed43-mid
+hub_strategy: end
 save_strategy: "no"
 save_only_model: true
 auto_resume_from_checkpoints: false
